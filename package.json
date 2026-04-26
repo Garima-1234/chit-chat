@@ -1,0 +1,17 @@
+{
+  "name": "orbit-chat-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Railway entry package for Orbit Chat",
+  "main": "nodeserver/index.js",
+  "scripts": {
+    "start": "node nodeserver/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  }
+}

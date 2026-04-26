@@ -4,7 +4,12 @@ const path = require('path');
 const express = require('express');
 const { Server } = require('socket.io');
 
-const PORT = Number(process.env.PORT) || 8001;
+const PORT = Number(process.env.PORT ?? process.env.CHAT_APP_PORT);
+
+if (!Number.isInteger(PORT) || PORT <= 0) {
+  console.error('Missing or invalid PORT. Set PORT (or CHAT_APP_PORT) before starting the server.');
+  process.exit(1);
+}
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'store.json');
