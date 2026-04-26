@@ -1,0 +1,123 @@
+{
+  "users": {
+    "1234567": {
+      "phone": "1234567",
+      "name": "abh",
+      "lastSeenAt": "2026-04-26T16:43:57.273Z"
+    },
+    "12345678": {
+      "phone": "12345678",
+      "name": "abd",
+      "lastSeenAt": "2026-04-26T16:43:57.274Z"
+    },
+    "9998887771": {
+      "phone": "9998887771",
+      "name": "SmokeUser",
+      "lastSeenAt": "2026-04-26T16:53:37.138Z"
+    }
+  },
+  "rooms": {
+    "SMOKE-ROOM": {
+      "id": "SMOKE-ROOM",
+      "name": "Smoke Room",
+      "createdAt": "2026-04-26T16:53:37.142Z",
+      "messages": [
+        {
+          "id": "1777222417144-b9kgp0",
+          "senderName": "System",
+          "senderPhone": "",
+          "text": "SmokeUser joined the room.",
+          "system": true,
+          "reactions": [],
+          "sentAt": "2026-04-26T16:53:37.144Z"
+        },
+        {
+          "id": "1777222417151-qhk9lr",
+          "senderName": "SmokeUser",
+          "senderPhone": "9998887771",
+          "text": "hello smoke",
+          "system": false,
+          "reactions": [],
+          "sentAt": "2026-04-26T16:53:37.151Z"
+        },
+        {
+          "id": "1777222417157-nwe5bc",
+          "senderName": "System",
+          "senderPhone": "",
+          "text": "SmokeUser left the room.",
+          "system": true,
+          "reactions": [],
+          "sentAt": "2026-04-26T16:53:37.157Z"
+        }
+      ]
+    }
+  },
+  "personalChats": {
+    "1234567__12345678": {
+      "id": "1234567__12345678",
+      "participants": [
+        "1234567",
+        "12345678"
+      ],
+      "createdAt": "2026-04-26T14:57:47.249Z",
+      "messages": [
+        {
+          "id": "1777216170185-j8bz6z",
+          "senderName": "abd",
+          "senderPhone": "12345678",
+          "text": "hloo",
+          "system": false,
+          "sentAt": "2026-04-26T15:09:30.185Z"
+        },
+        {
+          "id": "1777216228132-w5p882",
+          "senderName": "abh",
+          "senderPhone": "1234567",
+          "text": "hiii",
+          "system": false,
+          "sentAt": "2026-04-26T15:10:28.132Z"
+        },
+        {
+          "id": "1777216591908-shbdv4",
+          "senderName": "abd",
+          "senderPhone": "12345678",
+          "text": "orr",
+          "system": false,
+          "sentAt": "2026-04-26T15:16:31.908Z",
+          "reactions": [
+            {
+              "emoji": "😂",
+              "phone": "1234567",
+              "name": "abh"
+            }
+          ]
+        },
+        {
+          "id": "1777216599220-nzo1cn",
+          "senderName": "abh",
+          "senderPhone": "1234567",
+          "text": "sahi h",
+          "system": false,
+          "sentAt": "2026-04-26T15:16:39.220Z"
+        },
+        {
+          "id": "1777217056127-qkgxwr",
+          "senderName": "abd",
+          "senderPhone": "12345678",
+          "text": "or bhai",
+          "system": false,
+          "sentAt": "2026-04-26T15:24:16.127Z",
+          "reactions": []
+        },
+        {
+          "id": "1777217070711-n1a00f",
+          "senderName": "abh",
+          "senderPhone": "1234567",
+          "text": "sn badhiya",
+          "system": false,
+          "sentAt": "2026-04-26T15:24:30.711Z"
+        }
+      ]
+    }
+  }
+}

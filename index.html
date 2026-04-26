@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orbit Chat</title>
+    <script defer src="/socket.io/socket.io.js"></script>
+    <script defer src="/client.js"></script>
+    <style>
+      :root {
+        --bg: linear-gradient(135deg, #f8efe5 0%, #d9ecf2 55%, #f4d6cc 100%);
+        --panel: rgba(255, 252, 247, 0.92);
+        --panel-strong: rgba(255, 255, 255, 0.96);
+        --line: rgba(23, 55, 77, 0.12);
+        --ink: #17374d;
+        --muted: #5c7282;
+        --accent: #d65f4a;
+        --secondary: #2f7c80;
+        --bubble-in: #ffffff;
+        --bubble-out: #17374d;
+        --system: #efe4d4;
+        --shadow: 0 24px 60px rgba(23, 55, 77, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        border-radius: 999px;
+        filter: blur(12px);
+        opacity: 0.55;
+        pointer-events: none;
+      }
+
+      body::before {
+        width: 260px;
+        height: 260px;
+        background: rgba(214, 95, 74, 0.22);
+        top: -40px;
+        right: 8%;
+      }
+
+      body::after {
+        width: 320px;
+        height: 320px;
+        background: rgba(47, 124, 128, 0.18);
+        bottom: -70px;
+        left: 4%;
+      }
+
+      .screen {
+        width: min(1180px, 100%);
+        min-height: min(860px, calc(100vh - 48px));
+        background: rgba(255, 255, 255, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+        overflow: hidden;
+      }
+
+      .screen[hidden] {
+        display: none;
+      }
+
+      .home-screen {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+      }
+
+      .sidebar {
+        background: rgba(255, 249, 242, 0.78);
+        border-right: 1px solid var(--line);
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .brand img {
+        width: 58px;
+        height: 58px;
+        object-fit: cover;
+        border-radius: 18px;
+        box-shadow: 0 10px 24px rgba(23, 55, 77, 0.16);
+      }
+
+      .brand h1,
+      .chat-title {
+        margin: 0;
+        font-size: 1.7rem;
+        letter-spacing: 0.04em;
+      }
+
+      .brand p,
+      .profile-card p,
+      .panel p,
+      .chat-subtitle,
+      .status-line {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .profile-card,
+      .panel,
+      .mode-card,
+      .welcome-card,
+      .chat-panel,
+      .saved-chat-card {
+        background: var(--panel);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 22px;
+      }
+
+      .profile-card,
+      .panel,
+      .mode-card {
+        padding: 18px;
+      }
+
+      .saved-chats {
+        display: grid;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .saved-chats-shell {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(23, 55, 77, 0.1);
+      }
+
+      .saved-chats-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .saved-chats-title {
+        margin: 0;
+        font-size: 0.98rem;
+        color: var(--ink);
+      }
+
+      .saved-chats-badge {
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(47, 124, 128, 0.12);
+        color: var(--secondary);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+      }
+
+      .saved-chats-note {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.45;
+      }
+
+      .saved-chat-card {
+        width: 100%;
+        padding: 15px 16px;
+        text-align: left;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(23, 55, 77, 0.08);
+        box-shadow: 0 12px 22px rgba(23, 55, 77, 0.06);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      }
+
+      .saved-chat-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(47, 124, 128, 0.28);
+        box-shadow: 0 16px 28px rgba(23, 55, 77, 0.1);
+      }
+
+      .saved-chat-card strong,
+      .saved-chat-card span {
+        display: block;
+      }
+
+      .saved-chat-card strong {
+        color: var(--ink);
+        margin-bottom: 4px;
+      }
+
+      .saved-chat-card .saved-chat-subtitle,
+      .saved-chat-card .saved-chat-preview {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .saved-chat-card .saved-chat-preview {
+        margin-top: 6px;
+      }
+
+      .saved-chat-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .saved-chat-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(214, 95, 74, 0.18), rgba(47, 124, 128, 0.18));
+        color: var(--ink);
+        display: grid;
+        place-items: center;
+        font-size: 0.88rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .saved-chat-copy {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .saved-empty {
+        color: var(--muted);
+        font-size: 0.92rem;
+        padding: 14px 2px 4px;
+      }
+
+      .profile-card h2,
+      .panel h3,
+      .mode-card h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+
+      .panel form,
+      .mode-card form {
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      input,
+      button {
+        font: inherit;
+      }
+
+      input {
+        width: 100%;
+        border: 1px solid rgba(23, 55, 77, 0.12);
+        background: var(--panel-strong);
+        color: var(--ink);
+        border-radius: 14px;
+        padding: 13px 14px;
+        outline: none;
+      }
+
+      button {
+        border: none;
+        border-radius: 14px;
+        padding: 13px 16px;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .primary-btn {
+        background: var(--accent);
+        color: #fffdf9;
+        font-weight: 700;
+      }
+
+      .secondary-btn {
+        background: var(--secondary);
+        color: #f5fffe;
+        font-weight: 700;
+      }
+
+      .status-line {
+        font-size: 0.9rem;
+        min-height: 1.3rem;
+      }
+
+      .status-line[data-error="true"] {
+        color: #a33b2a;
+      }
+
+      .home-main {
+        padding: 28px;
+        display: flex;
+        align-items: center;
+      }
+
+      .welcome-card {
+        width: 100%;
+        padding: 34px;
+        background: rgba(255, 255, 255, 0.36);
+        border: 1px dashed rgba(23, 55, 77, 0.18);
+        text-align: center;
+      }
+
+      .welcome-card h2 {
+        margin: 0 0 10px;
+        font-size: 1.5rem;
+      }
+
+      .welcome-card p {
+        margin: 0 auto;
+        max-width: 520px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .chat-screen {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .chat-topbar {
+        padding: 22px 24px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.46);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .back-btn {
+        background: rgba(23, 55, 77, 0.08);
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .chat-topbar-copy {
+        min-width: 0;
+      }
+
+      .chat-subtitle {
+        margin-top: 6px;
+        font-size: 0.96rem;
+      }
+
+      .chat-body {
+        padding: 24px;
+        min-height: 0;
+      }
+
+      .chat-panel {
+        height: 100%;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .messages {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-right: 6px;
+      }
+
+      .message-card {
+        max-width: min(76%, 560px);
+        padding: 14px 16px;
+        border-radius: 18px;
+        box-shadow: 0 10px 24px rgba(23, 55, 77, 0.07);
+        display: grid;
+        gap: 7px;
+        position: relative;
+        overflow: visible;
+      }
+
+      .message-card.has-reactions {
+        margin-bottom: 18px;
+      }
+
+      .message-card.incoming {
+        align-self: flex-start;
+        background: var(--bubble-in);
+      }
+
+      .message-card.outgoing {
+        align-self: flex-end;
+        background: var(--bubble-out);
+        color: #fff;
+      }
+
+      .message-card.system {
+        align-self: center;
+        max-width: 90%;
+        background: var(--system);
+        color: var(--ink);
+      }
+
+      .message-meta,
+      .message-time {
+        font-size: 0.77rem;
+        opacity: 0.76;
+      }
+
+      .message-text {
+        margin: 0;
+        line-height: 1.55;
+        word-break: break-word;
+      }
+
+      .message-main {
+        display: grid;
+        gap: 7px;
+      }
+
+      .message-actions {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: flex;
+        gap: 6px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+        z-index: 6;
+      }
+
+      .message-card:hover .message-actions,
+      .message-card.menu-open .message-actions {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .reaction-launcher {
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.88);
+        color: var(--ink);
+        font-size: 0.9rem;
+        box-shadow: 0 8px 18px rgba(23, 55, 77, 0.12);
+      }
+
+      .message-card.outgoing .reaction-launcher {
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+      }
+
+      .reaction-menu {
+        position: absolute;
+        right: -6px;
+        bottom: calc(100% + 10px);
+        display: flex;
+        gap: 4px;
+        padding: 7px 8px;
+        border-radius: 999px;
+        background: rgba(30, 33, 37, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 16px 30px rgba(10, 14, 20, 0.28);
+        backdrop-filter: blur(8px);
+        z-index: 5;
+      }
+
+      .message-card.incoming .reaction-menu {
+        right: auto;
+        left: 8px;
+      }
+
+      .message-card.outgoing .reaction-menu {
+        right: -6px;
+        left: auto;
+      }
+
+      .reaction-menu[hidden] {
+        display: none;
+      }
+
+      .reaction-option {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #fff;
+        font-size: 1.5rem;
+        line-height: 1;
+        display: grid;
+        place-items: center;
+        transition: transform 0.14s ease, background 0.14s ease;
+      }
+
+      .reaction-option:hover {
+        transform: scale(1.12);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .reaction-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        max-width: calc(100% - 18px);
+        position: absolute;
+        bottom: -18px;
+        z-index: 2;
+      }
+
+      .message-card.incoming .reaction-bar {
+        left: 14px;
+        justify-content: flex-start;
+      }
+
+      .message-card.outgoing .reaction-bar {
+        right: 14px;
+        justify-content: flex-end;
+      }
+
+      .message-card.system .reaction-bar {
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .reaction-pill {
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.98);
+        color: var(--ink);
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid rgba(23, 55, 77, 0.12);
+        box-shadow: 0 8px 16px rgba(23, 55, 77, 0.12);
+        white-space: nowrap;
+      }
+
+      .reaction-pill.is-own {
+        background: rgba(255, 244, 240, 0.98);
+        color: #9f3f31;
+      }
+
+      .history-placeholder {
+        margin: auto;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .typing-indicator {
+        min-height: 1.2rem;
+        font-size: 0.9rem;
+        color: var(--secondary);
+      }
+
+      .composer {
+        border-top: 1px solid var(--line);
+        padding: 18px 24px 24px;
+        background: rgba(255, 255, 255, 0.46);
+      }
+
+      .composer form {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 12px;
+      }
+
+      .emoji-wrap {
+        position: relative;
+      }
+
+      .emoji-btn {
+        background: rgba(23, 55, 77, 0.08);
+        color: var(--ink);
+        font-weight: 700;
+        min-width: 56px;
+      }
+
+      .emoji-picker {
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 10px);
+        width: 260px;
+        padding: 12px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid rgba(23, 55, 77, 0.12);
+        box-shadow: 0 18px 36px rgba(23, 55, 77, 0.16);
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+      }
+
+      .emoji-picker[hidden] {
+        display: none;
+      }
+
+      .emoji-option {
+        padding: 8px;
+        border-radius: 12px;
+        background: rgba(23, 55, 77, 0.05);
+        font-size: 1.1rem;
+        line-height: 1;
+      }
+
+      @media (max-width: 980px) {
+        .home-screen {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          border-right: none;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+
+      @media (max-width: 640px) {
+        body {
+          padding: 10px;
+        }
+
+        .screen {
+          min-height: calc(100vh - 20px);
+          border-radius: 20px;
+        }
+
+        .home-main,
+        .chat-body,
+        .chat-topbar,
+        .composer,
+        .sidebar {
+          padding-left: 18px;
+          padding-right: 18px;
+        }
+
+        .composer form {
+          grid-template-columns: 1fr;
+        }
+
+        .message-card {
+          max-width: 92%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="screen home-screen" id="home-screen">
+      <aside class="sidebar">
+        <section class="brand">
+          <img src="me.jpeg" alt="Orbit Chat logo" />
+          <div>
+            <h1>Orbit Chat</h1>
+            <p>Room conversations and personal chats in one place.</p>
+          </div>
+        </section>
+
+        <section class="profile-card">
+          <h2 id="profile-name">Guest User</h2>
+          <p id="profile-phone">Register with your phone number to begin.</p>
+        </section>
+
+        <section class="panel" id="auth-panel">
+          <h3>1. Register yourself</h3>
+          <p>Your phone number becomes your personal chat identity.</p>
+          <form id="register-form">
+            <label>
+              Name
+              <input id="name-input" type="text" placeholder="Enter your name" required />
+            </label>
+            <label>
+              Phone number
+              <input id="phone-input" type="tel" placeholder="Enter your phone number" required />
+            </label>
+            <button class="primary-btn" type="submit">Save identity</button>
+          </form>
+        </section>
+
+        <section class="panel" id="action-panel" hidden>
+          <h3>2. Choose your chat type</h3>
+          <p>Anyone can join a room. Personal chat is locked to phone-number pairs.</p>
+
+          <div class="mode-card">
+            <h3>Join Room</h3>
+            <form id="room-form">
+              <label>
+                Room code
+                <input id="room-code-input" type="text" placeholder="Example: TEAM-ALPHA" required />
+              </label>
+              <label>
+                Room title
+                <input id="room-name-input" type="text" placeholder="Optional friendly room name" />
+              </label>
+              <button class="secondary-btn" type="submit">Join room chat</button>
+            </form>
+          </div>
+
+          <div class="mode-card">
+            <h3>Personal Chat</h3>
+            <form id="personal-form">
+              <label>
+                Other user's phone number
+                <input id="target-phone-input" type="tel" placeholder="Enter target phone number" required />
+              </label>
+              <button class="primary-btn" type="submit">Open personal chat</button>
+            </form>
+            <section class="saved-chats-shell">
+              <div class="saved-chats-head">
+                <h4 class="saved-chats-title">Connected Users List</h4>
+                <span class="saved-chats-badge" id="saved-chats-count">0 chats</span>
+              </div>
+              <p class="saved-chats-note">
+                Tap any existing personal chat to open it instantly without entering the number again.
+              </p>
+              <div class="saved-chats" id="saved-personal-chats"></div>
+            </section>
+          </div>
+        </section>
+
+        <div class="status-line" id="status-line" data-error="false"></div>
+      </aside>
+
+      <section class="home-main">
+        <section class="welcome-card">
+          <h2>Open the conversation as a full page</h2>
+          <p>
+            Register once, then use room chat for open groups or personal chat for direct one-to-one
+            messaging. When a conversation opens, it will move to a dedicated chat screen and you can
+            come back here with the back button.
+          </p>
+        </section>
+      </section>
+    </main>
+
+    <main class="screen chat-screen" id="chat-screen" hidden>
+      <header class="chat-topbar">
+        <button class="back-btn" id="back-btn" type="button">Back</button>
+        <div class="chat-topbar-copy">
+          <h2 class="chat-title" id="chat-title">Conversation</h2>
+          <p class="chat-subtitle" id="chat-subtitle"></p>
+        </div>
+      </header>
+
+      <section class="chat-body">
+        <section class="chat-panel">
+          <div class="messages" id="messages"></div>
+          <div class="typing-indicator" id="typing-indicator" hidden></div>
+        </section>
+      </section>
+
+      <footer class="composer">
+        <form id="send-container">
+          <input
+            type="text"
+            id="messageInp"
+            placeholder="Write your message here..."
+            disabled
+          />
+          <div class="emoji-wrap">
+            <button class="emoji-btn" id="emoji-btn" type="button" disabled>🙂</button>
+            <div class="emoji-picker" id="emoji-picker" hidden></div>
+          </div>
+          <button class="primary-btn" id="btnh" type="submit" disabled>Send message</button>
+        </form>
+      </footer>
+    </main>
+  </body>
+</html>
